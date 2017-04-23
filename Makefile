@@ -1,4 +1,4 @@
-all: rdmem wrmem rdpci
+all: rdmem wrmem rdpci rport wport
 
 rdmem: rdmem.o DirectHW.o
 	$(CC) -o $@ $^ -framework IOKit
@@ -6,6 +6,12 @@ wrmem: wrmem.o DirectHW.o
 	$(CC) -o $@ $^ -framework IOKit
 
 rdpci: rdpci.o DirectHW.o
+	$(CC) -o $@ $^ -framework IOKit
+
+rport: rport.c DirectHW.o
+	$(CC) -o $@ $^ -framework IOKit
+
+wport: wport.c DirectHW.o
 	$(CC) -o $@ $^ -framework IOKit
 
 clean:

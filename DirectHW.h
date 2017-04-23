@@ -6,7 +6,7 @@
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -26,10 +26,11 @@ int iopl(int unused);
 unsigned char inb(unsigned short addr);
 unsigned short inw(unsigned short addr);
 unsigned int inl(unsigned short addr);
+int darwin_ioread(int pos, unsigned char * buf, int len);
 
-void outb(unsigned char val, unsigned short addr);
-void outw(unsigned short val, unsigned short addr);
-void outl(unsigned int val, unsigned short addr);
+int outb(unsigned char val, unsigned short addr);
+int outw(unsigned short val, unsigned short addr);
+int outl(unsigned int val, unsigned short addr);
 
 void *map_physical(uint64_t phys_addr, size_t len);
 void unmap_physical(void *virt_addr, size_t len);

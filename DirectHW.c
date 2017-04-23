@@ -6,7 +6,7 @@
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -109,7 +109,7 @@ static void darwin_cleanup(void)
 	IOServiceClose(connect);
 }
 
-static int darwin_ioread(int pos, unsigned char * buf, int len)
+int darwin_ioread(int pos, unsigned char * buf, int len)
 {
 
 	kern_return_t err;
@@ -137,8 +137,10 @@ static int darwin_ioread(int pos, unsigned char * buf, int len)
 	}
 #endif
 
-	if (err != KERN_SUCCESS)
+	if (err != KERN_SUCCESS) {
+		printf("connect call method failed\n");
 		return 1;
+	}
 
 	tmpdata = out.data;
 
@@ -157,7 +159,7 @@ static int darwin_ioread(int pos, unsigned char * buf, int len)
 	return 0;
 }
 
-static int darwin_iowrite(int pos, unsigned char * buf, int len)
+int darwin_iowrite(int pos, unsigned char * buf, int len)
 {
 	kern_return_t err;
 	size_t dataInLen = sizeof(iomem_t);
@@ -214,19 +216,19 @@ unsigned int inl(unsigned short addr)
 	return ret;
 }
 
-void outb(unsigned char val, unsigned short addr)
+int outb(unsigned char val, unsigned short addr)
 {
-	darwin_iowrite(addr, &val, 1);
+	return darwin_iowrite(addr, &val, 1);
 }
 
-void outw(unsigned short val, unsigned short addr)
+int outw(unsigned short val, unsigned short addr)
 {
-	darwin_iowrite(addr, (unsigned char *)&val, 2);
+	return darwin_iowrite(addr, (unsigned char *)&val, 2);
 }
 
-void outl(unsigned int val, unsigned short addr)
+int outl(unsigned int val, unsigned short addr)
 {
-	darwin_iowrite(addr, (unsigned char *)&val, 4);
+	return darwin_iowrite(addr, (unsigned char *)&val, 4);
 }
 
 int iopl(int level __attribute__((unused)))
@@ -384,4 +386,3 @@ int logical_cpu_select(int cpu)
 	current_logical_cpu = cpu;
 	return 0;
 }
-
