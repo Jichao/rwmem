@@ -27,7 +27,7 @@ unsigned char inb(unsigned short addr);
 unsigned short inw(unsigned short addr);
 unsigned int inl(unsigned short addr);
 int darwin_ioread(int pos, unsigned char * buf, int len);
-
+int darwin_iowrite(int pos, unsigned char * buf, int len);
 int outb(unsigned char val, unsigned short addr);
 int outw(unsigned short val, unsigned short addr);
 int outl(unsigned int val, unsigned short addr);

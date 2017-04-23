@@ -59,13 +59,15 @@ main(
     int result = 0;
     if (mode == kPortMode_Byte) {
         uint8_t value = (uint8_t)strtoul(argv[2], NULL, 0);
-        result = outb(port, value);
+        printf("port = %lu, value = %d\n", port, value);
+        result = outb(value, port);
     } else if (mode == kPortMode_Word) {
         uint16_t value = (uint16_t)strtoul(argv[2], NULL, 0);
-        result = outw(port, value);
+        printf("port = %lx, value = %x\n", port, value);
+        result = outw(value, port);
     } else if (mode == kPortMode_Dword) {
         uint32_t value = (uint32_t)strtoul(argv[2], NULL, 0);
-        result = outl(port, value);
+        result = outl(value, port);
     }
     if (result) {
         printf("write error");
