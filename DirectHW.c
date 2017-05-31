@@ -32,7 +32,7 @@
 #undef WANT_OLD_API
 
 /* define DEBUG to print Framework debugging information */
-static const int debug;
+#undef DEBUG
 
 #define     err_get_system(err) (((err)>>26)&0x3f)
 #define     err_get_sub(err)    (((err)>>14)&0xfff)
@@ -44,6 +44,8 @@ enum {
 	kPrepareMap,
 	kReadMSR,
 	kWriteMSR,
+	kReadCpuID,
+	kReadMem,
 	kNumberOfMethods
 };
 
@@ -64,6 +66,19 @@ typedef struct {
 	UInt32 hi;
 	UInt32 lo;
 } msrcmd_t;
+
+typedef struct {
+	uint32_t core;
+	uint32_t eax;
+	uint32_t ecx;
+	uint32_t cpudata[4];
+} cpuid_t;
+
+typedef struct {
+	uint32_t core;
+	uint64_t addr;
+	uint32_t data;
+} readmem_t;
 
 static io_connect_t connect = -1;
 static io_service_t iokit_uc;
@@ -86,7 +101,7 @@ static int darwin_init(void)
 					IOServiceMatching("DirectHWService"));
 
 	if (!iokit_uc) {
-		fprintf(stderr, "DirectHW.kext not loaded.\n");
+		printf("DirectHW.kext not loaded.\n");
 		errno = ENOSYS;
 		return -1;
 	}
@@ -96,7 +111,7 @@ static int darwin_init(void)
 
 	/* Should not go further if error with service open */
 	if (err != KERN_SUCCESS) {
-		fprintf(stderr, "Could not create DirectHW instance.\n");
+		printf("Could not create DirectHW instance.\n");
 		errno = ENOSYS;
 		return -1;
 	}
@@ -137,10 +152,8 @@ int darwin_ioread(int pos, unsigned char * buf, int len)
 	}
 #endif
 
-	if (err != KERN_SUCCESS) {
-		printf("connect call method failed\n");
+	if (err != KERN_SUCCESS)
 		return 1;
-	}
 
 	tmpdata = out.data;
 
@@ -159,7 +172,7 @@ int darwin_ioread(int pos, unsigned char * buf, int len)
 	return 0;
 }
 
-int darwin_iowrite(int pos, unsigned char * buf, int len)
+static int darwin_iowrite(int pos, unsigned char * buf, int len)
 {
 	kern_return_t err;
 	size_t dataInLen = sizeof(iomem_t);
@@ -216,19 +229,19 @@ unsigned int inl(unsigned short addr)
 	return ret;
 }
 
-int outb(unsigned char val, unsigned short addr)
+void outb(unsigned char val, unsigned short addr)
 {
-	return darwin_iowrite(addr, &val, 1);
+	darwin_iowrite(addr, &val, 1);
 }
 
-int outw(unsigned short val, unsigned short addr)
+void outw(unsigned short val, unsigned short addr)
 {
-	return darwin_iowrite(addr, (unsigned char *)&val, 2);
+	darwin_iowrite(addr, (unsigned char *)&val, 2);
 }
 
-int outl(unsigned int val, unsigned short addr)
+void outl(unsigned int val, unsigned short addr)
 {
-	return darwin_iowrite(addr, (unsigned char *)&val, 4);
+	darwin_iowrite(addr, (unsigned char *)&val, 4);
 }
 
 int iopl(int level __attribute__((unused)))
@@ -254,8 +267,9 @@ void *map_physical(uint64_t phys_addr, size_t len)
 	in.addr = phys_addr;
 	in.size = len;
 
-	if (debug)
-		fprintf(stderr, "map_phys: phys %08"PRIx64", %08zx\n", phys_addr, len);
+#ifdef DEBUG
+	printf("map_phys: phys %08lx, %08x\n", phys_addr, len);
+#endif
 
 #if !defined(__LP64__) && defined(WANT_OLD_API)
 	/* Check if OSX 10.5 API is available */
@@ -270,14 +284,14 @@ void *map_physical(uint64_t phys_addr, size_t len)
 #endif
 
 	if (err != KERN_SUCCESS) {
-		fprintf(stderr, "\nError(kPrepareMap): system 0x%x subsystem 0x%x code 0x%x ",
+		printf("\nError(kPrepareMap): system 0x%x subsystem 0x%x code 0x%x ",
 				err_get_system(err), err_get_sub(err), err_get_code(err));
 
-		fprintf(stderr, "physical 0x%08"PRIx64"[0x%zx]\n", phys_addr, len);
+		printf("physical 0x%08llx[0x%x]\n", phys_addr, (unsigned int)len);
 
 		switch (err_get_code(err)) {
-		case 0x2c2: fprintf(stderr, "Invalid argument.\n"); errno = EINVAL; break;
-		case 0x2cd: fprintf(stderr, "Device not open.\n"); errno = ENOENT; break;
+		case 0x2c2: printf("Invalid argument.\n"); errno = EINVAL; break;
+		case 0x2cd: printf("Device not open.\n"); errno = ENOENT; break;
 		}
 
 		return MAP_FAILED;
@@ -293,21 +307,22 @@ void *map_physical(uint64_t phys_addr, size_t len)
 	usleep(1000);
 
 	if (err != KERN_SUCCESS) {
-		fprintf(stderr, "\nError(IOConnectMapMemory): system 0x%x subsystem 0x%x code 0x%x ",
+		printf("\nError(IOConnectMapMemory): system 0x%x subsystem 0x%x code 0x%x ",
 				err_get_system(err), err_get_sub(err), err_get_code(err));
 
-		fprintf(stderr, "physical 0x%08"PRIx64"[0x%zx]\n", phys_addr, len);
+		printf("physical 0x%08llx[0x%x]\n", phys_addr, (unsigned int)len);
 
 		switch (err_get_code(err)) {
-		case 0x2c2: fprintf(stderr, "Invalid argument.\n"); errno = EINVAL; break;
-		case 0x2cd: fprintf(stderr, "Device not open.\n"); errno = ENOENT; break;
+		case 0x2c2: printf("Invalid argument.\n"); errno = EINVAL; break;
+		case 0x2cd: printf("Device not open.\n"); errno = ENOENT; break;
 		}
 
 		return MAP_FAILED;
 	}
 
-	if (debug)
-		fprintf(stderr, "map_phys: virt %08"PRIx64", %08zx\n", addr, (size_t) size);
+#ifdef DEBUG
+	printf("map_phys: virt %08x, %08x\n", addr, size);
+#endif
 
         return (void *)addr;
 }
@@ -349,6 +364,66 @@ msr_t rdmsr(int addr)
 	ret.hi = out.hi;
 
 	return ret;
+}
+
+int rdcpuid(uint32_t eax, uint32_t ecx, uint32_t cpudata[4])
+{
+	kern_return_t err;
+	size_t dataInLen = sizeof(cpuid_t);
+	size_t dataOutLen = sizeof(cpuid_t);
+	cpuid_t in, out;
+
+	in.core = current_logical_cpu;
+	in.eax = eax;
+	in.ecx = ecx;
+
+#if !defined(__LP64__) && defined(WANT_OLD_API)
+	/* Check if OSX 10.5 API is available */
+	if (IOConnectCallStructMethod != NULL) {
+#endif
+		err = IOConnectCallStructMethod(connect, kReadCpuID, &in, dataInLen, &out, &dataOutLen);
+#if !defined(__LP64__) && defined(WANT_OLD_API)
+	} else {
+		/* Use old API */
+		err = IOConnectMethodStructureIStructureO(connect, kReadCpuID, dataInLen, &dataOutLen, &in, &out);
+	}
+#endif
+
+	if (err != KERN_SUCCESS)
+		return -1;
+
+	memcpy(cpudata, out.cpudata, sizeof(uint32_t) * 4);
+	return 0;
+}
+
+
+int readmem32(uint64_t addr, uint32_t* data)
+{
+	kern_return_t err;
+	size_t dataInLen = sizeof(readmem_t);
+	size_t dataOutLen = sizeof(readmem_t);
+	readmem_t in, out;
+
+	in.core = current_logical_cpu;
+	in.addr = addr;
+
+#if !defined(__LP64__) && defined(WANT_OLD_API)
+	/* Check if OSX 10.5 API is available */
+	if (IOConnectCallStructMethod != NULL) {
+#endif
+		err = IOConnectCallStructMethod(connect, kReadMem, &in, dataInLen, &out, &dataOutLen);
+#if !defined(__LP64__) && defined(WANT_OLD_API)
+	} else {
+		/* Use old API */
+		err = IOConnectMethodStructureIStructureO(connect, kReadMem, dataInLen, &dataOutLen, &in, &out);
+	}
+#endif
+
+	if (err != KERN_SUCCESS)
+		return -1;
+
+	*data = out.data;
+	return 0;
 }
 
 int wrmsr(int addr, msr_t msr)

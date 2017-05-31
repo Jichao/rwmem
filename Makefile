@@ -1,4 +1,4 @@
-all: directories rdmem wrmem rdpci rport wport rdmsr rdmtrr cpuid
+all: directories rdmem wrmem rdpci rport wport rdmsr rdmtrr rdcpuid cpuinfo rdapic
 
 .PHONY: directories
 directories: bin
@@ -24,15 +24,26 @@ rdmsr: rdmsr.cc DirectHW.o
 
 rdmtrr: rdmtrr.cc DirectHW.o
 	g++ -std=c++11 -o bin/$@ $^ -framework IOKit
-cpuid: cpuid.cc
-	g++ -std=c++11 -o bin/$@ $^
+
+rdapic: rdapic.cc DirectHW.o base.o
+	g++ -std=c++11 -o bin/$@ $^ -framework IOKit
+
+rdcpuid: rdcpuid.cc DirectHW.o
+	g++ -std=c++11 -o bin/$@ $^ -framework IOKit
+
+cpuinfo: cpuinfo.cc DirectHW.o base.o
+	g++ -std=c++11 -o bin/$@ $^ -framework IOKit
+
+base.o: base.cc base.h
+	g++ -std=c++11 -c -o base.o base.cc
 
 clean:
 	$(RM) *.o .*.d
 	$(RM) -rf bin
 
-test: rdmtrr
-	sudo ./rdmtrr
+test: rdapic
+	sudo ./bin/rdapic
+
 CFLAGS = \
 	-g \
 	-O3 \

@@ -56,20 +56,19 @@ main(
 		argv++;
 	}
 	const uintptr_t port = strtoul(argv[1], NULL, 0);
-    int result = 0;
     if (mode == kPortMode_Byte) {
         uint8_t value = (uint8_t)strtoul(argv[2], NULL, 0);
-        result = outb(value, port);
+        outb(value, port);
     } else if (mode == kPortMode_Word) {
         uint16_t value = (uint16_t)strtoul(argv[2], NULL, 0);
-        result = outw(value, port);
+        outw(value, port);
     } else if (mode == kPortMode_Dword) {
         uint32_t value = (uint32_t)strtoul(argv[2], NULL, 0);
-        result = outl(value, port);
+        outl(value, port);
     }
-    if (result) {
-        printf("write error");
-        return EXIT_FAILURE;
-    }
+    // if (result) {
+    //     printf("write error");
+    //     return EXIT_FAILURE;
+    // }
 	return EXIT_SUCCESS;
 }

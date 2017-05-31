@@ -10,6 +10,9 @@
 #include <bitset>
 #include <cpuid.h>
 #include <sstream>
+
+//only for one core
+
 extern "C"
 {
     #include "DirectHW.h"
