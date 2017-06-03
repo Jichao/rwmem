@@ -55,9 +55,17 @@ std::string uint64_to_readable_mem(uint64_t value)
     }
     return result.str();
 }
+
 uint32_t getbits(uint32_t value, int startBit, int endBit) {
     value = value & (-1 << startBit);
     value = value & ~(-1 << endBit);
+    value = value >> startBit;
+    return value;
+}
+
+uint64_t getbits(uint64_t value, int startBit, int endBit) {
+    value = value & (-1llu << startBit);
+    value = value & ~(-1llu << endBit);
     value = value >> startBit;
     return value;
 }

@@ -418,10 +418,8 @@ int readmem32(uint64_t addr, uint32_t* data)
 		err = IOConnectMethodStructureIStructureO(connect, kReadMem, dataInLen, &dataOutLen, &in, &out);
 	}
 #endif
-
 	if (err != KERN_SUCCESS)
 		return -1;
-
 	*data = out.data;
 	return 0;
 }

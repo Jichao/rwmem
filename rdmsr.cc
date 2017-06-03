@@ -38,13 +38,22 @@ main(
 		return EXIT_FAILURE;
 	}
 
-	if (argc != 2)
+	if (argc < 2)
 	{
-		fprintf(stderr, "Usage: %s addr\n", argv[0]);
+		fprintf(stderr, "Usage: %s [core] [addr]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	const uintptr_t addr = strtoul(argv[1], NULL, 0);
+    int core = 0;
+    uintptr_t addr = 0;
+    if (argc >= 2) {
+        core = (int)strtol(argv[1], NULL, 0);
+    }
+    if (argc >= 3) {
+        addr = strtoul(argv[2], NULL, 0);
+    }
+    logical_cpu_select(core);
+
     msr_t result = rdmsr(addr);
     if (result.hi == INVALID_MSR_HI) {
         printf("write error");
@@ -55,6 +64,6 @@ main(
     std::cout << int2bits(result.lo) << "(0x" << std::hex << result.lo << ")" << std::endl;
 
     std::cout << "ho: ";
-    std::cout << int2bits(result.hi) << "(0x" << std::hex << result.lo << ")" << std::endl;
+    std::cout << int2bits(result.hi) << "(0x" << std::hex << result.hi << ")" << std::endl;
     return EXIT_SUCCESS;
 }
