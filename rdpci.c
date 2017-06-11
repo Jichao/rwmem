@@ -11,7 +11,48 @@
 #include "DirectHW.h"
 
 int
-main(
+port_main(int argc, char** argv);
+static const int kAddressPort = 0xcf8;
+static const int kDataPort = 0xcfc;
+
+int main(int argc, char** argv)
+{
+	if (iopl(0) < 0)
+	{
+		perror("iopl");
+		return EXIT_FAILURE;
+	}
+
+	return port_main(argc, argv);
+}
+
+int
+port_main(int argc, char** argv)
+{
+	if (argc != 4)
+	{
+		fprintf(stderr, "Usage: %s bus device func\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	const uint32_t bus = strtoul(argv[1], NULL, 0);
+	const uint32_t device = strtoul(argv[2], NULL, 0);
+	const uint32_t func = strtoul(argv[3], NULL, 0);
+	for (int offset = 0; offset < 64; ++offset) {
+		const uint32_t addr =
+			((bus & 0xff) << 16) |
+			((device & 0x1f) << 11) |
+			((func & 0x07) << 8) |
+			((offset & 0x7f) << 2) |
+			(1 << 31);
+		outl(addr, kAddressPort);
+		printf("offest: %08x value: %08x\n", offset * 4, inl(kDataPort));
+	}
+	return 0;
+}
+
+int
+mem_main(
 	int argc,
 	char ** argv
 )
@@ -33,12 +74,6 @@ main(
 		| ((func & 0x07) << 12) // 3 bits
 		| ((reg  & 0xFFC) << 0) // 12 bits, minus bottom 2
 		;
-
-	if (iopl(0) < 0)
-	{
-		perror("iopl");
-		return EXIT_FAILURE;
-	}
 
 	const uintptr_t page_mask = 0xFFF;
 	const uintptr_t page_offset = addr & page_mask;
